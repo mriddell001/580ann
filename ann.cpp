@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <vector>
 #include "Node.h"
+#include "bmp.h"
 
 using namespace std;
 
@@ -37,6 +38,8 @@ int main(int argc, char *argv[])
         node.Prime_output_vector(data);
     }
     /** Completed Output **/
+
+    node.Connect_layers();
 
     return 0;
 }
