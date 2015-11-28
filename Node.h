@@ -13,6 +13,7 @@ public:
     void Prime_input_vector(double);
     void Prime_output_vector(double);
     void Prime_hidden_layers(int, int);
+    void Prime_class_label(double);
 
     //   Connects edges in ANN.
     void Connect_layers();
@@ -22,13 +23,19 @@ public:
 
     //   Calculates activation function across ANN.
     void Calculate_layers();
+    void Euclidean_distance();
     void Print_layers();
+
+    //   Backtracking
+    void Calculate_error();
+    void Propagate_error();
 
 private:
 
     class OutputNode {
     public:
         double original_value;
+        double error_value;
     };
     vector<OutputNode*> output_vector;
 
@@ -37,6 +44,7 @@ private:
         int index;
         int layer;
         double node_weight;
+        double delta_error;
         vector<DataNode*> input_edges;
         vector<OutputNode*> output_edges;
         vector<double> edge_weight;
@@ -46,6 +54,7 @@ private:
     class InputNode {
     public:
         double original_value;
+        double input_error;
         vector<DataNode*> input_edges;
         vector<double> edge_weight;
 
@@ -53,7 +62,8 @@ private:
     vector<InputNode*> input_vector;
 
     vector<int> hidden_layers;
-    int ind;
+    vector<double> class_label;
+    int ind;//ex
 };
 
 #endif // NODE_H
