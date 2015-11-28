@@ -51,6 +51,10 @@ void Node::Connect_layers() {
     Hidden_to_hidden();
 }
 
+void Node::Prime_class_label(double input) {
+    class_label.push_back(input);
+}
+
 /** This assumes there is at least one hidden layer to connect to. **/
 void Node::Input_to_first_hidden() {
     for (vector<InputNode*>::iterator it = input_vector.begin(); it != input_vector.end(); ++it) {
@@ -151,4 +155,62 @@ void Node::Print_layers() {
         double weight = (*tmp).original_value;
         cout << i << ": " << weight << endl;
     }
+}
+
+void Node::Euclidean_distance() {
+    double sum = 0.0;
+    for (int i = 0; i < output_vector.size(); i++) {
+        OutputNode *tmp = output_vector[i];
+        double class_value = class_label[i];
+        double output_weight = (*tmp).original_value;
+        sum = sum + pow((class_value - output_weight), 2.0);
+    }
+    double euclidean_d = sqrt(sum);
+    cout << "Euclidean Distance: " << euclidean_d << endl;
+}
+
+void Node::Calculate_error() {
+    /** This calculates the error for every node. **/
+    for (int i = 0; i < output_vector.size(); i++) {
+        OutputNode *tmp = output_vector[i];
+        double class_value = class_label[i];
+        double output_weight = (*tmp).original_value;
+        (*tmp).error_value = output_weight * (1 - output_weight) * (class_value - output_weight);
+    }
+
+    for (int i = (data_vector.size()-1); i > -1; i--) {
+        DataNode *tmp = data_vector[i];
+        double weight = (*tmp).node_weight;
+        double error_sum = 0.0;
+
+        if (i < (*hidden_layers.end())) {
+            for (int j = 0; j < (*tmp).edge_weight.size(); j++) {
+                DataNode *hidden_node = (*tmp).input_edges[j];
+                error_sum += (*tmp).edge_weight[j] * (*hidden_node).delta_error;
+            }
+        }
+        else {
+            for (int j = 0; j < (*tmp).edge_weight.size(); j++) {
+                OutputNode *output_node = (*tmp).output_edges[j];
+                error_sum += (*tmp).edge_weight[j] * (*output_node).error_value;
+            }
+        }
+        (*tmp).delta_error = weight * (1 - weight) * error_sum;
+    }
+
+    for (int i = (input_vector.size()-1); i > -1; i--) {
+        InputNode *tmp = input_vector[i];
+        double input_weight = (*tmp).original_value;
+        double error_sum = 0.0;
+
+        for (int j = 0; j < (*tmp).edge_weight; j++) {
+            DataNode *data_node = (*tmp).input_edges[j];
+            error_sum += (*tmp).edge_weight[j] * (*data_node).delta_error;
+        }
+        (*tmp).input_error = input_weight * (1 - input_weight) * error_sum;
+    }
+}
+
+void Node::Propagate_error() {
+    //for (int i = 0; i)
 }
