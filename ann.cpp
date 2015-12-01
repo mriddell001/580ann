@@ -49,9 +49,20 @@ int main(int argc, char *argv[])
     }
     /** Completed Output **/
 
+    ifstream c_file(argv[4], ios::in);
+    while (c_file >> data) {
+        node.Prime_class_label(data);
+    }
+
     node.Connect_layers();
-    node.Calculate_layers();
-    node.Print_layers();
+
+    for (int i = 0; i < 10000; i++) {
+        node.Calculate_layers();
+        //node.Print_layers();
+        node.Euclidean_distance();
+        node.Calculate_error();
+        node.Propagate_error();
+    }
 
     return 0;
 }
