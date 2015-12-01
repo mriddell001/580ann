@@ -34,7 +34,7 @@ private:
 
     class OutputNode {
     public:
-        double original_value;
+        double node_weight;
         double error_value;
     };
     vector<OutputNode*> output_vector;
@@ -53,7 +53,8 @@ private:
 
     class InputNode {
     public:
-        double original_value;
+        double node_weight;
+        double actual_value;
         double input_error;
         vector<DataNode*> input_edges;
         vector<double> edge_weight;
@@ -64,6 +65,8 @@ private:
     vector<int> hidden_layers;
     vector<double> class_label;
     int ind;//ex
+
+    double progress;
 };
 
 #endif // NODE_H
