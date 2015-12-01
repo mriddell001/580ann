@@ -11,7 +11,8 @@ using namespace std;
 
 void Node::Prime_input_vector(double input) {
     InputNode *tmp = new InputNode();
-    (*tmp).original_value = input;
+    (*tmp).actual_value = input;
+    (*tmp).node_weight = 0.01;
     input_vector.push_back(tmp);
     ind = 0;
 }
@@ -41,7 +42,7 @@ void Node::Prime_hidden_layers(int input, int layers) {
 
 void Node::Prime_output_vector(double input) {
     OutputNode *tmp = new OutputNode();
-    (*tmp).original_value = input;
+    (*tmp).node_weight = 0.01;
     output_vector.push_back(tmp);
 }
 
@@ -107,6 +108,8 @@ void Node::Hidden_to_hidden() {
             i = data_vector.size();
         }
     }
+
+    progress = 0.0;
 }
 
 void Node::Calculate_layers() {
@@ -115,7 +118,7 @@ void Node::Calculate_layers() {
         InputNode *tmp = input_vector[i];
         for (int j = 0; j < (*tmp).edge_weight.size(); j++) {
             DataNode *hidden_node = (*tmp).input_edges[j];
-            (*hidden_node).node_weight = (*hidden_node).node_weight + (*tmp).original_value * (*tmp).edge_weight[j];
+            (*hidden_node).node_weight = (*hidden_node).node_weight + (*tmp).actual_value * (*tmp).edge_weight[j];
         }
     }
     // Calculate activation function.
@@ -136,24 +139,25 @@ void Node::Calculate_layers() {
         else {
             for (int j = 0; j < (*tmp).edge_weight.size(); j ++) {
                 OutputNode *output_node = (*tmp).output_edges[j];
-                (*output_node).original_value = (*output_node).original_value + (*tmp).node_weight * (*tmp).edge_weight[j];
+                (*output_node).node_weight = (*output_node).node_weight + (*tmp).node_weight * (*tmp).edge_weight[j];
             }
         }
     }
 
     for (int i = 0; i < output_vector.size(); i++) {
         OutputNode *tmp = output_vector[i];
-        double weight = (*tmp).original_value;
+        double weight = (*tmp).node_weight;
         weight = 1.0 / (1.0 + pow(e, (-weight)));
-        (*tmp).original_value = weight;
+        (*tmp).node_weight = weight;
     }
 }
 
 void Node::Print_layers() {
     for (int i = 0; i < output_vector.size(); i++) {
         OutputNode *tmp = output_vector[i];
-        double weight = (*tmp).original_value;
+        double weight = (*tmp).node_weight;
         cout << i << ": " << weight << endl;
+        cout << endl;
     }
 }
 
@@ -162,11 +166,12 @@ void Node::Euclidean_distance() {
     for (int i = 0; i < output_vector.size(); i++) {
         OutputNode *tmp = output_vector[i];
         double class_value = class_label[i];
-        double output_weight = (*tmp).original_value;
+        double output_weight = (*tmp).node_weight;
         sum = sum + pow((class_value - output_weight), 2.0);
     }
     double euclidean_d = sqrt(sum);
-    cout << "Euclidean Distance: " << euclidean_d << endl;
+    cout << "Euclidean Distance: " << euclidean_d << "\t\tProgress: " <<  euclidean_d - progress << endl;
+    progress = euclidean_d;
 }
 
 void Node::Calculate_error() {
@@ -174,7 +179,7 @@ void Node::Calculate_error() {
     for (int i = 0; i < output_vector.size(); i++) {
         OutputNode *tmp = output_vector[i];
         double class_value = class_label[i];
-        double output_weight = (*tmp).original_value;
+        double output_weight = (*tmp).node_weight;
         (*tmp).error_value = output_weight * (1 - output_weight) * (class_value - output_weight);
     }
 
@@ -200,10 +205,10 @@ void Node::Calculate_error() {
 
     for (int i = (input_vector.size()-1); i > -1; i--) {
         InputNode *tmp = input_vector[i];
-        double input_weight = (*tmp).original_value;
+        double input_weight = (*tmp).node_weight;
         double error_sum = 0.0;
 
-        for (int j = 0; j < (*tmp).edge_weight; j++) {
+        for (int j = 0; j < (*tmp).edge_weight.size(); j++) {
             DataNode *data_node = (*tmp).input_edges[j];
             error_sum += (*tmp).edge_weight[j] * (*data_node).delta_error;
         }
@@ -212,5 +217,51 @@ void Node::Calculate_error() {
 }
 
 void Node::Propagate_error() {
-    //for (int i = 0; i)
+    double alpha = 0.005;
+
+    /** Through the input layer. **/
+    for (int i = 0; i < input_vector.size(); i++) {
+        InputNode *tmp = input_vector[i];
+        double in_err = (*tmp).input_error;
+        double dummy = (*tmp).node_weight;
+        double actual = (*tmp).actual_value;
+
+        /** This calculates the node weight for weight(0,i) **/
+        //dummy = dummy + alpha * dummy * in_err;
+        (*tmp).node_weight = dummy;                         // Is this even needed?
+
+        /** This calculates the edge weight for edge(i,j) **/
+        for (int j = 0; j < (*tmp).edge_weight.size(); j++) {
+            DataNode *data = (*tmp).input_edges[j];
+            double edge_prop = (*tmp).edge_weight[j];
+            double da_err = (*data).delta_error;
+
+            (*tmp).edge_weight[j] = edge_prop + alpha * actual * da_err;
+        }
+    }
+    /** Through the hidden layer(s). **/
+    for (int i = 0; i < data_vector.size(); i++) {
+        DataNode *tmp = data_vector[i];
+        double hi_err = (*tmp).delta_error;
+        double weight = (*tmp).node_weight;
+
+        weight = weight + alpha * weight * hi_err;
+        (*tmp).node_weight = weight;
+        if (i < (*hidden_layers.end())) {
+            for (int j = 0; j < (*tmp).edge_weight.size(); j++) {
+                DataNode *data = (*tmp).input_edges[j];
+                double edge_prop = (*tmp).edge_weight[j];
+                double da_err = (*data).delta_error;
+                (*tmp).edge_weight[j] = edge_prop + alpha * weight * hi_err;
+            }
+        }
+        else {
+            for (int j = 0; j < (*tmp).edge_weight.size(); j++) {
+                OutputNode *out = (*tmp).output_edges[j];
+                double edge_prop = (*tmp).edge_weight[j];
+                //double out_err = (*tmp).error_value;
+                //(*tmp).edge_weight[j] = edge_prop + alpha * weight * out_err;
+            }
+        }
+    }
 }
